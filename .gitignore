@@ -1,0 +1,7 @@
+# Terraform directories and files
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+# Override .gitignore with custom .gitignore files
+!.gitignore
