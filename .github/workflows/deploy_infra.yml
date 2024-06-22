@@ -6,12 +6,22 @@ on:
       - main
 
 jobs:
-  deploy:
+  plan:
     runs-on: ubuntu-latest
+    outputs:
+      plan-exists: ${{ steps.check-plan.outputs.plan-exists }}
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+
+    - name: Cache Terraform Modules
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.terraform.d/plugin-cache
+          .terraform
+        key: ${{ runner.os }}-terraform-${{ hashFiles('**/*.tf') }}
 
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v1
@@ -24,7 +34,7 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
-
+  
     - name: Terraform Init
       run: terraform init
     
@@ -32,7 +42,37 @@ jobs:
       run: terraform validate
 
     - name: Terraform Plan
-      run: terraform plan
+      id: plan
+      run: |
+        terraform plan -out=tfplan
+        echo "::set-output name=plan-exists::true"
+    
+    - name: Upload Terraform Plan
+      uses: actions/upload-artifact@v2
+      with:
+          name: terraform-plan
+          path: tfplan
+       
+  apply:
+    runs-on: ubuntu-latest
+    needs: plan
+    #
+    if: needs.plan.outputs.plan-exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'   
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Download Terraform Plan
+      uses: actions/download-artifact@v2
+      with:
+        name: terraform-plan
+        path: .
+    
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+          terraform_version: 1.5.7   
 
     - name: Terraform Apply
       run: terraform apply -auto-approve
