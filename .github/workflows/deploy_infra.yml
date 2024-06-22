@@ -56,7 +56,7 @@ jobs:
   apply:
     runs-on: ubuntu-latest
     needs: plan
-    if:  github.event_name == 'push' && github.ref == 'refs/heads/main' 
+    if: needs.plan.outputs.plan-exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' 
 
     steps:
     - name: Checkout repository
