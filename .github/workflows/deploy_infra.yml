@@ -46,12 +46,16 @@ jobs:
       run: |
         set +e  # Disable exit on error to capture the output
         terraform plan -out=tfplan
-        PLAN_OUTPUT=$(terraform plan -detailed-exitcode)
-        echo "${PLAN_OUTPUT}"
-        if [ $? -eq 2 ]; then
+        PLAN_EXIT_CODE=$?
+        if [ $PLAN_EXIT_CODE -eq 2 ]; then
+          echo "Changes detected that need to be applied."
           echo "::set-output name=plan-exists::true"
-        else
+        elif [ $PLAN_EXIT_CODE -eq 0 ]; then
+          echo "No changes detected."
           echo "::set-output name=plan-exists::false"
+        else
+          echo "Error during plan."
+          exit 1  # Exit with error if Terraform plan fails
         fi
         set -e  # Re-enable exit on error
     
