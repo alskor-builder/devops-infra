@@ -6,10 +6,8 @@ on:
       - main
 
 jobs:
-  plan:
+  deploy:
     runs-on: ubuntu-latest
-    outputs:
-      plan-exists: ${{ steps.check-plan.outputs.plan-exists }}
 
     steps:
     - name: Checkout repository
@@ -34,67 +32,37 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
-  
+
     - name: Terraform Init
       run: terraform init
-    
+
     - name: Terraform Validate
       run: terraform validate
 
     - name: Terraform Plan
+      id: terraform-plan
+      run: terraform plan -out=tfplan -detailed-exitcode
+      continue-on-error: true
+
+    - name: Check Plan Result and Apply
       id: check-plan
       run: |
-        set +e 
-        terraform plan -out=tfplan
-        PLAN_EXIT_CODE=$?
-        if [ $PLAN_EXIT_CODE -eq 2 ]; then
-          echo "Changes detected that need to be applied."
-          echo "::set-output name=plan-exists::true"
-        elif [ $PLAN_EXIT_CODE -eq 0 ]; then
-          echo "No changes detected."
-          echo "::set-output name=plan-exists::false"
+        if [[ ${{ steps.terraform-plan.outcome }} == 'failure' ]]; then
+          exit_code=${{ steps.terraform-plan.outputs.exit-code }}
+          if [ $exit_code -eq 0 ]; then
+            echo "No changes detected."
+            echo "plan-exists=false" >> $GITHUB_ENV
+          elif [ $exit_code -eq 2 ]; then
+            echo "Changes detected that need to be applied."
+            echo "plan-exists=true" >> $GITHUB_ENV
+          else
+            echo "Error during plan."
+            exit 1
+          fi
         else
-          echo "Error during plan."
-          exit 1  # Exit with error if Terraform plan fails
+          echo "plan-exists=true" >> $GITHUB_ENV
         fi
-        set -e 
-    
-    - name: Upload Terraform Plan
-      uses: actions/upload-artifact@v2
-      with:
-          name: terraform-plan
-          path: tfplan
-       
-  apply:
-    runs-on: ubuntu-latest
-    needs: plan
-    if: needs.plan.outputs.plan-exists == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' 
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
-
-    - name: Download Terraform Plan
-      uses: actions/download-artifact@v2
-      with:
-        name: terraform-plan
-        path: .
-    
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v1
-      with:
-          terraform_version: 1.5.7
-    
-    - name: Terraform Init
-      run: terraform init -reconfigure
 
     - name: Terraform Apply
-      run: terraform apply -auto-approve
-
+      if: env.plan-exists == 'true'
+      run: terraform apply -auto-approve tfplan
