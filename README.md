@@ -21,10 +21,11 @@ This Terraform project automates the deployment of an Amazon EKS (Elastic Kubern
 
 ### Security Groups (`security-group.tf`)
 - **EKS Cluster Security Group**:
-  - Permits all inbound traffic on all ports from any source (0.0.0.0/0).
+  - Permits all inbound traffic on port 80 from any source (0.0.0.0/0).
 
-### IAM Roles (`iam.tf`)
+### IAM Role for EKS Cluster (`iam.tf`)
 - **EKS Cluster Role**:
+  - **Role Name**: `eks-cluster-role-1`
   - Allows EKS service to manage clusters on your behalf.
 
 ### VPC Configuration (`vpc.tf`)
@@ -37,18 +38,7 @@ This Terraform project automates the deployment of an Amazon EKS (Elastic Kubern
 
 ## GitHub Actions Automation
 
-### `deploy_infra.yml`
-- **Trigger**: Executes on commits pushed to the main branch.
-- **Environment**: Runs on Ubuntu-latest.
-- **Steps**:
-  - **Checkout**: Pulls the latest code from the repository.
-  - **Setup Terraform**: Installs the specified Terraform version.
-  - **Configure AWS Credentials**: Uses GitHub Secrets to configure AWS credentials for Terraform.
-  - **Terraform Commands**:
-    - `terraform init`: Initializes a Terraform working directory.
-    - `terraform plan`: Shows what Terraform plans to do as part of the deployment.
-    - `terraform apply`: Applies the changes to deploy the EKS cluster.
-
+### [CI/CD Documentation](CICD_README.md)
 
 *** Security Considerations
 Review and restrict the ingress rules in the security group configuration to match your network policies.
