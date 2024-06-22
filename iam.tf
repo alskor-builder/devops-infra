@@ -38,7 +38,7 @@ resource "aws_iam_role" "eks_worker_role" {
   })
 
   tags = {
-    "kubernetes.io/cluster/${var.cluster_name}" = "owned"
+    "kubernetes.io/cluster/${module.eks.cluster_name}" = "owned"
   }
 }
 
