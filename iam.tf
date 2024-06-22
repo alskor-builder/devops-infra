@@ -20,52 +20,39 @@ resource "aws_iam_role_policy_attachment" "eks_vpc_resource_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
 }
 
+### Workers roles 
+resource "aws_iam_role" "eks_worker_role" {
+  name = "eks-worker-role-${module.eks.cluster_name}"
 
-###user role not working dont have permissions
-# resource "aws_iam_role" "user_eks_access_role" {
-#   name = "user-eks-access-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
 
-#   assume_role_policy = jsonencode({
-#     Version = "2012-10-17",
-#     Statement = [
-#       {
-#         Effect = "Allow",
-#         Principal = {
-#           AWS = "arn:aws:iam::411202742861:user/devops-exam"
-#         },
-#         Action = "sts:AssumeRole"
-#       }
-#     ]
-#   })
-# }
+  tags = {
+    "kubernetes.io/cluster/${var.cluster_name}" = "owned"
+  }
+}
 
-# resource "aws_iam_role_policy_attachment" "user_eks_policy" {
-#   role       = aws_iam_role.user_eks_access_role.name
-#   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-# }
+resource "aws_iam_role_policy_attachment" "eks_worker_node_policy" {
+  role       = aws_iam_role.eks_worker_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+}
 
-# resource "aws_iam_role_policy_attachment" "user_eks_vpc_resource_policy" {
-#   role       = aws_iam_role.user_eks_access_role.name
-#   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
-# }
+resource "aws_iam_role_policy_attachment" "eks_cni_policy" {
+  role       = aws_iam_role.eks_worker_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+}
 
-# resource "aws_iam_policy" "user_assume_role_policy" {
-#   name        = "UserAssumeEksClusterRole"
-#   description = "Allows user to assume EKS cluster role"
-
-#   policy = jsonencode({
-#     Version = "2012-10-17",
-#     Statement = [
-#       {
-#         Effect = "Allow",
-#         Action = "sts:AssumeRole",
-#         Resource = aws_iam_role.user_eks_access_role.arn
-#       }
-#     ]
-#   })
-# }
-
-# resource "aws_iam_user_policy_attachment" "user_assume_role_attachment" {
-#   user       = "devops-exam"
-#   policy_arn = aws_iam_policy.user_assume_role_policy.arn
-# }
+resource "aws_iam_role_policy_attachment" "ecr_read_only" {
+  role       = aws_iam_role.eks_worker_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
