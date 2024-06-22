@@ -44,8 +44,16 @@ jobs:
     - name: Terraform Plan
       id: plan
       run: |
+        set +e  # Disable exit on error to capture the output
         terraform plan -out=tfplan
-        echo "::set-output name=plan-exists::true"
+        PLAN_OUTPUT=$(terraform plan -detailed-exitcode)
+        echo "${PLAN_OUTPUT}"
+        if [ $? -eq 2 ]; then
+          echo "::set-output name=plan-exists::true"
+        else
+          echo "::set-output name=plan-exists::false"
+        fi
+        set -e  # Re-enable exit on error
     
     - name: Upload Terraform Plan
       uses: actions/upload-artifact@v2
