@@ -44,7 +44,7 @@ jobs:
     - name: Terraform Plan
       id: plan
       run: |
-        set +e  # Disable exit on error to capture the output
+        set +e 
         terraform plan -out=tfplan
         PLAN_EXIT_CODE=$?
         if [ $PLAN_EXIT_CODE -eq 2 ]; then
@@ -57,7 +57,7 @@ jobs:
           echo "Error during plan."
           exit 1  # Exit with error if Terraform plan fails
         fi
-        set -e  # Re-enable exit on error
+        set -e 
     
     - name: Upload Terraform Plan
       uses: actions/upload-artifact@v2
