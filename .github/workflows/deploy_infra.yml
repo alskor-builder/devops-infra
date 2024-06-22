@@ -13,14 +13,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Cache Terraform Modules
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.terraform.d/plugin-cache
-          .terraform
-        key: ${{ runner.os }}-terraform-${{ hashFiles('**/*.tf') }}-${{ github.run_number }}
-
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v1
       with:
@@ -35,34 +27,12 @@ jobs:
 
     - name: Terraform Init
       run: terraform init
-
+    
     - name: Terraform Validate
       run: terraform validate
 
     - name: Terraform Plan
-      id: terraform-plan
-      run: terraform plan -out=tfplan -detailed-exitcode
-      continue-on-error: true
-
-    - name: Check Plan Result and Apply
-      id: check-plan
-      run: |
-        if [[ ${{ steps.terraform-plan.outcome }} == 'failure' ]]; then
-          exit_code=${{ steps.terraform-plan.outputs.exit-code }}
-          if [ $exit_code -eq 0 ]; then
-            echo "No changes detected."
-            echo "plan-exists=false" >> $GITHUB_ENV
-          elif [ $exit_code -eq 2 ]; then
-            echo "Changes detected that need to be applied."
-            echo "plan-exists=true" >> $GITHUB_ENV
-          else
-            echo "Error during plan."
-            exit 1
-          fi
-        else
-          echo "plan-exists=true" >> $GITHUB_ENV
-        fi
+      run: terraform plan
 
     - name: Terraform Apply
-      if: env.plan-exists == 'true'
-      run: terraform apply -auto-approve tfplan
+      run: terraform apply -auto-approve
