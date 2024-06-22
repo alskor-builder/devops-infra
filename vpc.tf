@@ -6,7 +6,7 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.8.0"
 
-  name = "my-vpc"
+  name = "my-vpc-1"
   cidr = "10.0.0.0/16"
 
   azs             = ["eu-west-1a", "eu-west-1b"]
@@ -18,7 +18,7 @@ module "vpc" {
 
   tags = {
     Terraform = "true"
-    Environment = "development"
+    Environment = "dev"
   }
 }
 

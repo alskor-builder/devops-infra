@@ -2,12 +2,12 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "20.14.0"
 
-  cluster_name    = "my-cluster"
+  cluster_name    = "my-cluster-1"
   cluster_version = "1.27"
-
   vpc_id          = module.vpc.vpc_id
   subnet_ids      = module.vpc.private_subnets
-  
+
+  # Enable private access for the control plane
   cluster_endpoint_private_access = true
   cluster_endpoint_public_access  = true
 

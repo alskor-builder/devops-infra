@@ -1,5 +1,5 @@
 resource "aws_security_group" "eks_cluster_sg" {
-  name        = "eks-cluster-sg"
+  name        = "eks-cluster-sg-1"
   description = "Security group for all nodes in the cluster"
   vpc_id      = module.vpc.vpc_id
 }
